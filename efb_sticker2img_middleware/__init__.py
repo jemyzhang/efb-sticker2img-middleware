@@ -5,13 +5,14 @@ import logging
 from typing import IO, Any, Dict, Optional, List, Tuple
 from tempfile import NamedTemporaryFile
 
-from ehforwarderbot import EFBMiddleware, EFBMsg, MsgType
+from ehforwarderbot import Middleware, Message, MsgType
 from . import __version__ as version
 from PIL import Image
 
-class Sticker2ImgMiddleware(EFBMiddleware):
+
+class Sticker2ImgMiddleware(Middleware):
     """
-    EFB Middleware - MessageBlockerMiddleware
+    Middleware - MessageBlockerMiddleware
     Add and manage filters to block some messages.
 
     Author: Catbaron <https://github.com/catbaron>
@@ -24,30 +25,31 @@ class Sticker2ImgMiddleware(EFBMiddleware):
     middleware_id = "catbaron.sticker2img"
     middleware_name = "Sticker2Image"
     __version__ = version.__version__
-    logger: logging.Logger = logging.getLogger("plugins.%s.MessageBlockerMiddleware" % middleware_id)
-
+    logger: logging.Logger = logging.getLogger(
+        "plugins.%s.MessageBlockerMiddleware" % middleware_id)
 
     def __init__(self, instance_id=None):
         super().__init__()
-        self.types = {'image', 'audio', 'file', 'link', 'location', 'status', 'sticker', 'text', 'video', 'unsupported'}
+        self.types = {'image', 'audio', 'file', 'link', 'location',
+                      'status', 'sticker', 'text', 'video', 'unsupported'}
         self.filters = dict()
 
-    def sent_by_master(self, message: EFBMsg) -> bool:
+    def sent_by_master(self, message: Message) -> bool:
         author = message.author
         if author and author.module_id and author.module_id == 'blueset.telegram':
             return True
         else:
             return False
 
-    def process_message(self, message: EFBMsg) -> Optional[EFBMsg]:
+    def process_message(self, message: Message) -> Optional[Message]:
         """
         Process a message with middleware
 
         Args:
-            message (:obj:`.EFBMsg`): Message object to process
+            message (:obj:`.Message`): Message object to process
 
         Returns:
-            Optional[:obj:`.EFBMsg`]: Processed message or None if discarded.
+            Optional[:obj:`.Message`]: Processed message or None if discarded.
         """
         if not self.sent_by_master(message):
             return message
@@ -60,7 +62,7 @@ class Sticker2ImgMiddleware(EFBMiddleware):
         img = Image.new("RGB", sticker.size, (256, 256, 256))
         img.paste(sticker, sticker)
 
-        # Create a new file 
+        # Create a new file
         message.file.close()
         message.file = NamedTemporaryFile(suffix='.jpg')
         message.filename = os.path.basename(message.file.name)
